@@ -7,6 +7,8 @@ import java.util.Set;
 import java.util.WeakHashMap;
 import java.util.logging.Logger;
 
+import org.acidg.lanchat.networking.ClientUpdateEvent.EChangeType;
+
 public class ClientList {
 	/** List of clients, used a monitor object to prevent race conditions */
 	private Map<String, Client> clients;
@@ -21,7 +23,9 @@ public class ClientList {
 	public void addClientUpdateListener(IClientUpdateListener listener) {
 		synchronized (clients) {
 			listeners.add(listener);
-			listener.clientsUpdated(clients.values());
+			for (Client client : clients.values()) {
+				listener.clientUpdated(new ClientUpdateEvent(EChangeType.ADDED, client, clients.values()));
+			}
 		}
 	}
 
@@ -42,6 +46,8 @@ public class ClientList {
 			}
 
 			clients.put(client.id, client);
+			notifyListeners(EChangeType.ADDED, client);
+			
 			return true;
 		}
 	}
@@ -54,7 +60,9 @@ public class ClientList {
 
 	public void removeClient(String clientId) {
 		synchronized (clients) {
-			clients.remove(clientId);
+			Client removedClient = clients.remove(clientId);
+
+			notifyListeners(EChangeType.REMOVED, removedClient);
 		}
 	}
 
@@ -73,9 +81,13 @@ public class ClientList {
 
 			client.state = state;
 
-			for (IClientUpdateListener listener : listeners) {
-				listener.clientsUpdated(clients.values());
-			}
+			notifyListeners(EChangeType.STATE_CHANGED, client);
+		}
+	}
+
+	private void notifyListeners(EChangeType type, Client client) {
+		for (IClientUpdateListener listener : listeners) {
+			listener.clientUpdated(new ClientUpdateEvent(type, client, clients.values()));
 		}
 	}
 
@@ -95,7 +107,8 @@ public class ClientList {
 			client.username = username;
 
 			for (IClientUpdateListener listener : listeners) {
-				listener.clientsUpdated(clients.values());
+				listener.clientUpdated(new ClientUpdateEvent(EChangeType.NAME_CHANGED, client, clients.values()));
+
 			}
 		}
 	}

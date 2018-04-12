@@ -1,7 +1,6 @@
 package org.acidg.lanchat.view;
 
 import java.awt.BorderLayout;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -15,6 +14,7 @@ import javax.swing.SwingUtilities;
 import org.acidg.lanchat.networking.BroadcastHandler;
 import org.acidg.lanchat.networking.Client;
 import org.acidg.lanchat.networking.ClientList;
+import org.acidg.lanchat.networking.ClientUpdateEvent;
 import org.acidg.lanchat.networking.ConversationManager;
 import org.acidg.lanchat.networking.IClientUpdateListener;
 import org.acidg.lanchat.networking.IMessageListener;
@@ -24,6 +24,7 @@ public class MainPanel implements IClientUpdateListener, IMessageListener {
 	private ClientList clientList;
 	private JPanel mainPanel;
 	private JList<Client> clientListPanel;
+	private DefaultListModel<Client> listModel;
 	private BroadcastHandler broadcastHandler;
 	private JPanel chatPanelContainer;
 	
@@ -40,11 +41,6 @@ public class MainPanel implements IClientUpdateListener, IMessageListener {
 	}
 
 	@Override
-	public void clientsUpdated(Collection<Client> clients) {
-		clientListPanel.setListData(clients.toArray(new Client[0]));
-	}
-
-	@Override
 	public void handleMessage(Message message) {
 		String clientId = message.fromClientId;
 				
@@ -55,6 +51,26 @@ public class MainPanel implements IClientUpdateListener, IMessageListener {
 		}
 		
 		chatPanel.addMessage(message);
+	}
+
+	@Override
+	public void clientUpdated(ClientUpdateEvent e) {
+		switch (e.type) {
+		case ADDED:
+			listModel.addElement(e.client);
+			chatPanels.put(e.client.id, new ChatPanel(e.client, conversationManager));
+			break;
+		case REMOVED:
+			listModel.removeElement(e.client);
+			chatPanels.remove(e.client.id);
+			break;
+		case STATE_CHANGED:
+			listModel.removeElement(e.client);
+			listModel.addElement(e.client);
+			break;
+		default:
+			// ignore
+		}
 	}
 	
 	public JPanel getComponent() {
@@ -69,8 +85,9 @@ public class MainPanel implements IClientUpdateListener, IMessageListener {
 		mainPanel = new JPanel();
 		mainPanel.setLayout(new BorderLayout(5, 5));
 		
+		listModel = new DefaultListModel<Client>();
 		clientListPanel = new JList<Client>();
-		clientListPanel.setModel(new DefaultListModel<Client>());
+		clientListPanel.setModel(listModel);
 		mainPanel.add(new JScrollPane(clientListPanel), BorderLayout.WEST);
 
 		chatPanelContainer = new JPanel(new BorderLayout());
