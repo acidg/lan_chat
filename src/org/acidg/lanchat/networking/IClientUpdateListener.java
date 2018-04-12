@@ -1,4 +1,4 @@
-package org.acidg.lanchat;
+package org.acidg.lanchat.networking;
 
 import java.util.Collection;
 

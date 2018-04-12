@@ -1,9 +1,8 @@
-package org.acidg.lanchat;
+package org.acidg.lanchat.networking;
 
 public enum EReachabilityState {
 	REACHABLE("User is online"),
-	PENDING("Waiting for answer"),
-	OFFLINE("User is offline");
+	PENDING("Waiting for answer");
 	
 	public final String description;
 	

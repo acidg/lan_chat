@@ -1,4 +1,4 @@
-package org.acidg.lanchat;
+package org.acidg.lanchat.networking;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -13,26 +13,24 @@ import java.util.Iterator;
 import java.util.Set;
 import java.util.logging.Logger;
 
+import org.acidg.lanchat.Settings;
+
 public class BroadcastHandler {
 	private static final Logger LOGGER = Logger.getLogger(BroadcastHandler.class.getName());
 
 	private static final int MAX_PACKAGE_LENGTH = 1024;
 
 	private DatagramSocket broadcastSocket;
-	private Set<InetAddress> networkBroadcastAddresses;
 
 	private Thread broadcastListenThread;
 
-	private ClientList clientList;
 	private ConversationManager conversationManager;
 
 	private int broadcastPort;
 
-	public BroadcastHandler(ClientList clientList, ConversationManager conversationManager, int broadcastPort) {
-		this.clientList = clientList;
+	public BroadcastHandler(ConversationManager conversationManager, int broadcastPort) {
 		this.conversationManager = conversationManager;
 		this.broadcastPort = broadcastPort;
-		networkBroadcastAddresses = getNetworkBroadcastAddresses();
 		try {
 			broadcastSocket = new DatagramSocket(broadcastPort);
 		} catch (SocketException e) {
@@ -40,10 +38,10 @@ public class BroadcastHandler {
 			throw new RuntimeException(e);
 		}
 
-		broadcastListenThread = new Thread(() -> handleBroadcasts());
-		broadcastListenThread.run();
+		broadcastListenThread = new Thread(() -> handleMessages());
+		broadcastListenThread.start();
 
-		new Thread(() -> sendDiscoverBroadcast()).run();
+		new Thread(() -> sendDiscoverBroadcast()).start();
 	}
 
 	private Set<InetAddress> getNetworkBroadcastAddresses() {
@@ -81,36 +79,70 @@ public class BroadcastHandler {
 	}
 
 	/**
-	 * Handles DISCOVER messages and responses from clients.
+	 * Handles DISCOVER and OFFER messages from clients.
 	 */
-	private void handleBroadcasts() {
-		while(!Thread.interrupted()) {
+	private void handleMessages() {
+		while (!Thread.interrupted()) {
 			byte[] buffer = new byte[MAX_PACKAGE_LENGTH];
 			DatagramPacket packet = new DatagramPacket(buffer, MAX_PACKAGE_LENGTH);
-			
+
 			try {
 				broadcastSocket.receive(packet);
 				String[] parts = new String(packet.getData(), 0, packet.getLength()).split(":");
-				Client client = new Client(packet.getAddress(), parts[0], Integer.parseInt(parts[1]));
-				clientList.updateClient(client);
-				new Thread(() -> conversationManager.establishMessagingConnection(client)).run();
+				
+				if (parts.length < 1) {
+					continue;
+				}
+				
+				switch (EMessageType.valueOf(parts[0])) {
+				case DISCOVER:
+					if (parts.length == 3) {
+						if (KeyManager.INSTANCE.id.equals(parts[2])) {
+							// Do not reply to ourself
+							break;
+						}
+						LOGGER.info("Got DISCOVER: " + String.join(":", parts));
+						replyOfferMessage(packet.getAddress(), parts[1], parts[2]);
+						break;
+					}
+				case OFFER:
+					if (parts.length == 4) {
+						LOGGER.info("Got OFFER: " + String.join(":", parts));
+						conversationManager.acceptMessagingConnection(packet.getAddress(), parts[1], parts[2], Integer.parseInt(parts[3]));
+						break;
+					}
+				default:
+					LOGGER.info("Got weird message from address " + packet.getAddress().getHostAddress() + ", message: "
+							+ String.join(":", parts));
+				}
 			} catch (IOException e) {
 				LOGGER.warning("Error listening for broadcast packets");
 			}
 		}
 	}
 
+	/** Sends a reply to a received DISCOVER message */
+	private void replyOfferMessage(InetAddress address, String username, String clientId) {
+		try {
+			int offerPort = conversationManager.offerMessagingConnection(address, username, clientId);
+			if (offerPort == -1) {
+				return;
+			}
+			broadcastSocket.send(PacketFactory.createOfferPacket(address, broadcastPort,
+					Settings.INSTANCE.getUsername(), KeyManager.INSTANCE.id, offerPort));
+		} catch (IOException e) {
+			LOGGER.warning("Error sending response to DISCOVER message: " + e.getMessage());
+		}
+	}
+
 	/**
 	 * Broadcasts a DISCOVER message to all networks we are connected to.
 	 */
-	private void sendDiscoverBroadcast() {
+	public void sendDiscoverBroadcast() {
 		String username = Settings.INSTANCE.getUsername();
-		String message = String.format("DISCOVER:%s", username);
-		byte[] buffer = message.getBytes();
-		for (InetAddress broadcastAddress : networkBroadcastAddresses) {
-			DatagramPacket packet = new DatagramPacket(buffer, buffer.length, broadcastAddress, this.broadcastPort);
+		for (InetAddress broadcastAddress : getNetworkBroadcastAddresses()) {
 			try {
-				broadcastSocket.send(packet);
+				broadcastSocket.send(PacketFactory.createDiscoverPacket(broadcastAddress, broadcastPort, username, KeyManager.INSTANCE.id));
 			} catch (IOException e) {
 				LOGGER.warning("Error sending broadcast message on " + broadcastAddress.getHostAddress() + ": "
 						+ e.getMessage());
@@ -124,7 +156,6 @@ public class BroadcastHandler {
 
 		broadcastListenThread.interrupt();
 		broadcastSocket.close();
-
 	}
 
 }
