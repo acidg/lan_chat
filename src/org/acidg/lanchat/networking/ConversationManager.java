@@ -126,6 +126,18 @@ public class ConversationManager {
 		}).start();
 	}
 
+	/** Closes all connections. */
+	public void closeAllConnections() {
+		for (Socket socket : connections.values()) {
+			try {
+				socket.close();
+			} catch (IOException e) {
+				// We don't care here, since we just want to quit.
+			}
+		}
+	}
+
+
 	/**
 	 * Starts the messaging loop for the given connected socket. The socket has to
 	 * be already connected. Adds the client to the client list.
@@ -159,13 +171,6 @@ public class ConversationManager {
 
 	@Override
 	protected void finalize() throws Throwable {
-		for (Socket socket : connections.values()) {
-			try {
-				socket.close();
-			} catch (IOException e) {
-				// We don't care here, since we just want to quit.
-			}
-		}
+		closeAllConnections();
 	}
-
 }

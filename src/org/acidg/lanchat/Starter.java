@@ -1,5 +1,6 @@
 package org.acidg.lanchat;
 
+import java.awt.Event;
 import java.awt.event.WindowEvent;
 import java.awt.event.WindowListener;
 
@@ -11,6 +12,7 @@ import org.acidg.lanchat.networking.BroadcastHandler;
 import org.acidg.lanchat.networking.ClientList;
 import org.acidg.lanchat.networking.ConversationManager;
 import org.acidg.lanchat.view.MainPanel;
+import org.acidg.lanchat.view.tray.LanChatTrayIcon;
 
 public class Starter {
 	private ClientList clientList;
@@ -37,9 +39,7 @@ public class Starter {
 
 			@Override
 			public void windowClosing(WindowEvent e) {
-				broadcastHandler = null;
-				conversationManager = null;
-				clientList = null;
+				frame.setVisible(false);
 			}
 
 			@Override
@@ -49,7 +49,9 @@ public class Starter {
 
 			@Override
 			public void windowIconified(WindowEvent e) {
-				// Ignore
+				if(e.getNewState()==Event.WINDOW_ICONIFY){
+                    frame.setVisible(false);
+				}
 			}
 
 			@Override
@@ -67,12 +69,14 @@ public class Starter {
 				// Ignore
 			}
 		});
-		frame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+		frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
 		
 		SwingUtilities.invokeLater(() -> {
+			new LanChatTrayIcon(frame, conversationManager, clientList);
+			
 			frame.setSize(800, 600);
 			frame.add(new MainPanel(clientList, broadcastHandler, conversationManager).getComponent());
-			frame.setVisible(true);
+			frame.setVisible(Settings.INSTANCE.getShowOnStartup());
 		});
 	}
 }

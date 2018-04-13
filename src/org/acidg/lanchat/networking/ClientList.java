@@ -1,5 +1,6 @@
 package org.acidg.lanchat.networking;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -115,5 +116,9 @@ public class ClientList {
 
 	public boolean hasActiveConnection(String clientId) {
 		return clients.containsKey(clientId);
+	}
+
+	public Collection<Client> getAllClients() {
+		return clients.values();
 	}
 }
