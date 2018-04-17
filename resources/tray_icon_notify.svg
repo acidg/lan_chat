@@ -16,7 +16,7 @@
    id="svg8"
    inkscape:version="0.92.2 2405546, 2018-03-11"
    sodipodi:docname="tray_icon_notify.svg"
-   inkscape:export-filename="/home/bene/git/lan_chat/resources/tray_icon_notify.png"
+   inkscape:export-filename="/home/bene/git/lan_chat/resources/tray_icon_notify_256.png"
    inkscape:export-xdpi="81.279999"
    inkscape:export-ydpi="81.279999">
   <defs
@@ -29,8 +29,8 @@
      inkscape:pageopacity="0.0"
      inkscape:pageshadow="2"
      inkscape:zoom="0.98994949"
-     inkscape:cx="-145.05168"
-     inkscape:cy="151.28403"
+     inkscape:cx="-20.210927"
+     inkscape:cy="-4.9519513"
      inkscape:document-units="mm"
      inkscape:current-layer="layer1"
      showgrid="true"
@@ -62,18 +62,22 @@
      id="layer1"
      transform="translate(0,-217)">
     <rect
-       style="opacity:1;fill:#ffffff;fill-opacity:1;stroke:#aaaaaf;stroke-width:5;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0.94117647;paint-order:normal"
+       style="opacity:1;fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:5;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:0.98160917;paint-order:normal"
        id="rect4518"
        width="48.380955"
        height="29.293152"
        x="14.4901"
-       y="242.21172" />
+       y="242.21172"
+       inkscape:export-xdpi="5"
+       inkscape:export-ydpi="5" />
     <path
-       style="fill:#ffffff;stroke:#aaaaaf;stroke-width:5;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.94117647;fill-opacity:1"
+       style="fill:#ffffff;fill-opacity:1;stroke:#000000;stroke-width:5;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:0.98160917"
        d="m 63.060033,260.73256 5.858637,11.52828 -6.047619,-0.75596"
        id="path4520"
        inkscape:connector-curvature="0"
-       sodipodi:nodetypes="ccc" />
+       sodipodi:nodetypes="ccc"
+       inkscape:export-xdpi="5"
+       inkscape:export-ydpi="5" />
     <circle
        style="opacity:1;fill:#ff0000;fill-opacity:1;stroke:#ff1100;stroke-width:5;stroke-linecap:round;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-dashoffset:0;stroke-opacity:1;paint-order:normal"
        id="path4543"
