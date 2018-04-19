@@ -33,20 +33,16 @@ public class MessageHandlerThread implements Runnable {
 
 	@Override
 	public void run() {
-		BufferedReader input;
-		try {
-			socket.setSoTimeout(MAX_HEATBEAT_INTERVAL);
-			input = new BufferedReader(new InputStreamReader(socket.getInputStream()));
-		} catch (IOException e) {
-			logger.warning("Could not open socket input stream: " + e.getMessage());
-			return;
-		}
-
+		Thread.currentThread().setName("MessageHandler " + socket.getInetAddress().getHostAddress());
 		while (!Thread.interrupted() && !socket.isClosed()) {
 			try {
+				socket.setSoTimeout(MAX_HEATBEAT_INTERVAL);
+				BufferedReader input = new BufferedReader(new InputStreamReader(socket.getInputStream(), "UTF-8"));
+
 				String content = input.readLine();
 				if (content == null) {
-					continue;
+					finalizeConnection();
+					return;
 				}
 				String[] parts = content.split(":");
 				if (parts.length < 2) {
@@ -70,20 +66,26 @@ public class MessageHandlerThread implements Runnable {
 							+ String.join(":", parts));
 				}
 			} catch (SocketTimeoutException e) {
+				logger.info("Sending Heartbeat to " + clientList.getClient(clientId));
 				sendHeartbeat();
 			} catch (IOException e) {
-				// User wants to exit application, or client closed connection
 				logger.info("Input stream closed: " + e.getMessage());
-				clientList.removeClient(clientId);
+				finalizeConnection();
 				return;
 			}
 		}
 		
+		finalizeConnection();
+	}
+
+	private void finalizeConnection() {
+		// User wants to exit application, or client closed connection
+		logger.info("Closing connection to " + clientList.getClient(clientId));
+		clientList.removeClient(clientId);
 		try {
-			input.close();
 			socket.close();
 		} catch (IOException e) {
-			// ignore
+			// ignore, probably already closed
 		}
 	}
 
@@ -108,7 +110,7 @@ public class MessageHandlerThread implements Runnable {
 			clientList.updateClientState(clientId, EReachabilityState.REACHABLE);
 		} catch (IOException e) {
 			logger.warning("Connection to " + clientList.getClient(clientId) + " seems down: " + e.getMessage());
-			clientList.removeClient(clientId);
+			finalizeConnection();
 		}
 	}
 }

@@ -23,10 +23,6 @@ import org.acidg.lanchat.networking.ConversationManager;
 import org.acidg.lanchat.networking.IMessageListener;
 import org.acidg.lanchat.networking.Message;
 
-import com.github.plushaze.traynotification.animations.Animations;
-import com.github.plushaze.traynotification.notification.Notifications;
-import com.github.plushaze.traynotification.notification.TrayNotification;
-
 public class LanChatTrayIcon implements IMessageListener {
 	private static final String POPUP_MENU_TITLE = "LAN Chat";
 	private static final Logger LOGGER = Logger.getLogger(LanChatTrayIcon.class.getName());
@@ -69,12 +65,12 @@ public class LanChatTrayIcon implements IMessageListener {
 		popupMenu = createPopupMenu();
 
 		trayIcon = new TrayIcon(normalTrayIcon, LAN_CHAT_TOOLTIP, popupMenu);
+		trayIcon.setImageAutoSize(true);
 		trayIcon.addMouseListener(new MouseAdapter() {
 			@Override
 			public void mouseClicked(MouseEvent e) {
 				if (e.getButton() == MouseEvent.BUTTON1) {
-					chatWindow.getContentPane().add(popupMenu);
-					popupMenu.show(chatWindow, e.getXOnScreen(), e.getYOnScreen());
+					openChatWindow();
 				}
 			}
 		});
@@ -84,6 +80,8 @@ public class LanChatTrayIcon implements IMessageListener {
 		} catch (AWTException e) {
 			LOGGER.warning("Could not add tray icon! " + e.getMessage());
 		}
+
+		conversationManager.addMessageListener(this);
 	}
 
 	public void handleMessage(Message message) {
@@ -93,16 +91,12 @@ public class LanChatTrayIcon implements IMessageListener {
 
 	private void showNotification(Message message) {
 		SwingUtilities.invokeLater(() -> {
-			TrayNotification notification = new TrayNotification();
+			if (chatWindow.isFocused()) {
+				return;
+			}
 			Client client = clientList.getClient(message.fromClientId);
-			notification.setTitle(NEW_MESSAGE_TITLE + client.username);
-			notification.setMessage(message.message);
-			notification.setAnimation(Animations.POPUP);
-			notification.setNotification(Notifications.SUCCESS);
-//			notification.setImage(new javafx.scene.image.Image("file://tray_icon_256.png"));
-			notification.showAndWait();
-			notification.setOnShown(e -> openChatWindow());
-			notification.setOnDismiss(e -> trayIcon.setImage(normalTrayIcon));
+			new MessageNotification(NEW_MESSAGE_TITLE + client.username, message.message, () -> openChatWindow())
+					.setVisible(true);
 		});
 	}
 
@@ -113,9 +107,6 @@ public class LanChatTrayIcon implements IMessageListener {
 		}
 	}
 
-	/**
-	 * @wbp.parser.entryPoint
-	 */
 	private PopupMenu createPopupMenu() {
 		PopupMenu popupMenu = new PopupMenu(POPUP_MENU_TITLE);
 
@@ -133,7 +124,7 @@ public class LanChatTrayIcon implements IMessageListener {
 			LOGGER.info("Custom action");
 			for (Client client : clientList.getAllClients()) {
 				conversationManager.sendMessage(new Message(Settings.INSTANCE.getCustomMessage(), new Date()),
-						client.id);
+						client.id, () -> {}); // TODO: update chat list
 			}
 		});
 		popupMenu.add(customActionItem);

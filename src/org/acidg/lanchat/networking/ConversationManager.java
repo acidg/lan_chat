@@ -105,7 +105,7 @@ public class ConversationManager {
 		return port;
 	}
 
-	public void sendMessage(Message message, String clientId) {
+	public void sendMessage(Message message, String clientId, Runnable callback) {
 		new Thread(() -> {
 			Socket clientSocket = connections.get(clientId);
 			if (clientSocket == null) {
@@ -114,14 +114,21 @@ public class ConversationManager {
 			}
 			
 			try {
-				BufferedWriter output = new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream()));
+				BufferedWriter output = new BufferedWriter(new OutputStreamWriter(clientSocket.getOutputStream(), "UTF-8"));
 				output.write(EMessageType.MESSAGE.toString());
 				output.write(":");
 				output.write(GSON.toJson(message));
 				output.newLine();
 				output.flush();
+				callback.run();
 			} catch (IOException e) {
 				LOGGER.warning("Error opening output for client with id " + message.fromClientId + ": " + e.getMessage());
+				clientList.removeClient(clientId);
+				try {
+					clientSocket.close();
+				} catch (IOException e1) {
+					// ignore, already failing
+				}
 			}
 		}).start();
 	}
@@ -148,7 +155,7 @@ public class ConversationManager {
 
 		try {
 			if (!clientList.addClient(client)) {
-				clientSocket.getOutputStream().write("DUPLICATE CONNECTION!".getBytes());
+				clientSocket.getOutputStream().write("DUPLICATE CONNECTION!".getBytes("UTF8"));
 				clientSocket.close();
 				return;
 			}

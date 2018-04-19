@@ -17,6 +17,8 @@ import org.acidg.lanchat.networking.KeyManager;
 import org.acidg.lanchat.networking.Message;
 
 public class ChatPanel {
+	private static final String SEND_BUTTON_TEXT = "Send";
+
 	private final Client selectedClient;
 
 	private JPanel mainPanel;
@@ -49,7 +51,7 @@ public class ChatPanel {
 
 		JPanel messageBoxAndButton = new JPanel(new BorderLayout());
 		messageBox = new JTextField();
-		sendButton = new JButton("Send");
+		sendButton = new JButton(SEND_BUTTON_TEXT);
 		messageBoxAndButton.add(messageBox, BorderLayout.CENTER);
 		messageBoxAndButton.add(sendButton, BorderLayout.EAST);
 		mainPanel.add(new JScrollPane(messageList), BorderLayout.CENTER);
@@ -63,8 +65,7 @@ public class ChatPanel {
 		String content = messageBox.getText();
 		Message message = new Message(content, new Date(), KeyManager.INSTANCE.id);
 
-		conversationManager.sendMessage(message, selectedClient.id);
-		listModel.addElement(message);
+		conversationManager.sendMessage(message, selectedClient.id, () -> listModel.addElement(message));
 		messageBox.setText("");
 	}
 
